@@ -1,0 +1,72 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :ios do
+  desc "自动化升级维护私有库"
+  lane :DidaUpdatePod do |options|
+    # add actions here: https://docs.fastlane.tools/actions
+    target_version = options[:version]
+    target_project = options[:project]
+    target_repo = options[:spec_repo]
+    update_info = options[:info]
+    spec_path = "#{target_project}.podspec"
+
+    #确定是 master 分支
+    ensure_git_branch
+
+    #修改 spec 为即将发布的版本, 如果不填写 target_version, 则版本号自增
+    version_bump_podspec(path: spec_path, version_number: target_version)
+
+    #1.修改spec 文件（s.version,s.description etsc.）
+    #2.pod install 
+    cocoapods(
+      clean: true,
+      podfile: "./Example/Podfile"
+    )
+
+    #生成 framework
+    generate_framework(framework_name: target_project)
+
+    #3.提交代码到远程仓库
+    git_add(path: ".")    
+    git_commit(path: ".", message: update_info)
+    push_to_git_remote
+
+    #检查 tag 是否已经存在
+    if git_tag_exists(tag: target_version) 
+      UI.message("你输入的 tag_version: #{target_version} 已经存在, 请删除后再操作")
+      remove_git_tag(tag_version: target_version)
+    end
+
+    #4.打标签，并且提交到远程
+    add_git_tag(
+      tag: target_version
+    )
+    push_git_tags
+
+    #5.验证spec,并提交到远程私有所以库
+    pod_lib_lint(allow_warnings: true)
+
+    #添加changelog
+
+    #添加到 target_repo 
+    if target_repo 
+      pod_push(path: spec_path, repo: target_repo, allow_warnings: true)
+    end
+
+  end
+end
