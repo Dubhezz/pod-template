@@ -44,8 +44,14 @@ platform :ios do
     #3.提交代码到远程仓库
     git_add(path: ".")    
     git_commit(path: ".", message: update_info)
-    push_to_git_remote
-
+    
+    #第一次提交远程，需设置远程仓库地址
+    if git_remote_url
+      set_git_remote_url
+    else
+      git_pull
+      push_to_git_remote
+    end
     #检查 tag 是否已经存在
     if git_tag_exists(tag: target_version) 
       UI.message("你输入的 tag_version: #{target_version} 已经存在, 请删除后再操作")
