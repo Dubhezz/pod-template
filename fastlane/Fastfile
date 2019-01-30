@@ -44,7 +44,7 @@ platform :ios do
     #3.提交代码到远程仓库
     git_add(path: ".")    
     git_commit(path: ".", message: update_info)
-    
+
     #第一次提交远程，需设置远程仓库地址
     if git_remote_url
       set_git_remote_url
@@ -66,8 +66,6 @@ platform :ios do
 
     #5.验证spec,并提交到远程私有所以库
     pod_lib_lint(allow_warnings: true)
-
-    #添加changelog
 
     #添加到 target_repo 
     if target_repo 
